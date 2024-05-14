@@ -1,64 +1,60 @@
-Sub EnviarEmailAutomatico()
+Private Sub Worksheet_Change(ByVal Target As Range)
     Dim OutlookApp As Object
     Dim OutlookMail As Object
     Dim EmailDestino As String
     Dim AssuntoEmail As String
     Dim CorpoEmail As String
     Dim CaminhoAnexo As String
-    Dim Planilha As Worksheet
     Dim UltimaLinha As Long
-    Dim i As Long
-    
-    ' Inicializar variáveis de e-mail
+    Dim CelulaAlterada As Range
+
+    ' Defina as variáveis de e-mail e caminho do anexo
     AssuntoEmail = "Assunto do E-mail"
     CaminhoAnexo = "C:\Users\cg876mg\Downloads\Funções BackOffice.pdf" ' Defina o caminho do arquivo
-    
-    ' Cria uma instância do Outlook
-    On Error Resume Next
-    Set OutlookApp = CreateObject("Outlook.Application")
-    On Error GoTo 0
 
-    If OutlookApp Is Nothing Then
-        MsgBox "O Outlook não está instalado ou configurado corretamente.", vbExclamation, "Erro"
-        Exit Sub
-    End If
-    
-    ' Defina a planilha como a ativa no momento
-    Set Planilha = ActiveSheet
-    
-    ' Encontrar a última linha com dados na coluna D
-    UltimaLinha = Planilha.Cells(Planilha.Rows.Count, "D").End(xlUp).Row
-    
-    ' Loop pelas linhas com dados na coluna D
-    For i = 2 To UltimaLinha ' Supondo que a primeira linha contenha cabeçalhos
-        EmailDestino = Planilha.Cells(i, "D").Value ' Endereço de e-mail na coluna D
-        CorpoEmail = Planilha.Cells(i, "E").Value ' Corpo do e-mail na coluna E
-        NomeDestinatario = Planilha.Cells(i, "C").Value ' Nome do destinatário na coluna C
+    ' Verifique se a alteração ocorreu na coluna D
+    If Not Intersect(Target, Me.Columns("D")) Is Nothing Then
+        Set CelulaAlterada = Intersect(Target, Me.Columns("D"))
         
-        ' Cria um novo e-mail
-        Set OutlookMail = OutlookApp.CreateItem(0)
+        ' Se mais de uma célula foi alterada, saia do sub para evitar loop infinito
+        If CelulaAlterada.Cells.Count > 1 Then Exit Sub
         
-        With OutlookMail
-            .To = EmailDestino
-            .Subject = AssuntoEmail
-            .Body = "Olá " & NomeDestinatario & "," & vbCrLf & vbCrLf & CorpoEmail
+        ' Verifique se a célula alterada não está vazia
+        If CelulaAlterada.Value <> "" Then
+            EmailDestino = CelulaAlterada.Value ' Endereço de e-mail na coluna D
+            CorpoEmail = CelulaAlterada.Offset(0, 1).Value ' Corpo do e-mail na coluna E
             
-            ' Anexar arquivo se o caminho do anexo não estiver vazio
-            If CaminhoAnexo <> "" Then
-                .Attachments.Add CaminhoAnexo
+            ' Cria uma instância do Outlook
+            On Error Resume Next
+            Set OutlookApp = CreateObject("Outlook.Application")
+            On Error GoTo 0
+            
+            If OutlookApp Is Nothing Then
+                MsgBox "O Outlook não está instalado ou configurado corretamente.", vbExclamation, "Erro"
+                Exit Sub
             End If
             
-            ' Enviar o e-mail (ou use .Display para visualizar antes de enviar)
-            .Send
-        End With
-        
-        ' Limpar objeto
-        Set OutlookMail = Nothing
-    Next i
-    
-    ' Limpar objetos
-    Set OutlookApp = Nothing
-    
-    MsgBox "E-mails enviados com sucesso!", vbInformation, "Sucesso"
-    
+            ' Cria um novo e-mail
+            Set OutlookMail = OutlookApp.CreateItem(0)
+            
+            With OutlookMail
+                .To = EmailDestino
+                .Subject = AssuntoEmail
+                .Body = "Olá," & vbCrLf & vbCrLf & CorpoEmail
+                
+                ' Anexar arquivo se o caminho do anexo não estiver vazio
+                If CaminhoAnexo <> "" Then
+                    .Attachments.Add CaminhoAnexo
+                End If
+                
+                ' Enviar o e-mail (ou use .Display para visualizar antes de enviar)
+                .Send
+            End With
+            
+            ' Limpar objeto
+            Set OutlookMail = Nothing
+            Set OutlookApp = Nothing
+        End If
+    End If
 End Sub
+
