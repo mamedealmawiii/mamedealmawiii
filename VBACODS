@@ -1,0 +1,64 @@
+Private Sub Worksheet_Calculate()
+    Dim rng As Range
+    Dim Cell As Range
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Dim emailTo As String
+    Dim emailSubject As String
+    Dim emailBody As String
+    Dim storeName As String
+    Dim lastRow As Long
+    Dim alreadyProcessed As Boolean
+    
+    ' Define a coluna para verificar (coluna P)
+    lastRow = Cells(Rows.Count, "P").End(xlUp).Row
+    Set rng = Range("P1:P" & lastRow)
+    
+    ' Verifica cada célula na coluna P
+    For Each Cell In rng
+        If LCase(Cell.Value) = "vencido" Then
+            ' Verifica se já foi processada (evitar múltiplos emails)
+            alreadyProcessed = False
+            If Not IsEmpty(Cell.Offset(0, 1).Value) Then
+                If Cell.Offset(0, 1).Value = "Processado" Then
+                    alreadyProcessed = True
+                End If
+            End If
+
+            If Not alreadyProcessed Then
+                ' Obtém o nome da loja na coluna A da mesma linha
+                storeName = Cells(Cell.Row, 1).Value
+                
+                ' Configurações do email
+                emailTo = "mamede.almawi@calzedonia.com.br;tacia.silva@calzedonia.com.br;aline.lima@calzedonia.com.br" ' Endereço de email do destinatário
+                emailSubject = "Notificação: Status Vencido"
+                emailBody = "Olá," & vbCrLf & vbCrLf & _
+                            "A loja " & storeName & " está marcada como 'vencido'." & vbCrLf & _
+                            "Por favor, tome as devidas providências." & vbCrLf & vbCrLf & _
+                            "Atenciosamente," & vbCrLf & _
+                            "Esta é uma mensagem automática"
+                
+                ' Cria o objeto Outlook e o email
+                Set OutApp = CreateObject("Outlook.Application")
+                Set OutMail = OutApp.CreateItem(0)
+                
+                With OutMail
+                    .To = emailTo
+                    .Subject = emailSubject
+                    .Body = emailBody
+                    .Send
+                End With
+                
+                ' Limpeza
+                Set OutMail = Nothing
+                Set OutApp = Nothing
+                
+                ' Notificação no Excel
+                MsgBox "Email enviado para " & emailTo & " sobre o status 'vencido' da loja " & storeName, vbInformation
+                
+                ' Marca a célula como processada para evitar múltiplos emails
+                Cell.Offset(0, 1).Value = "Processado"
+            End If
+        End If
+    Next Cell
+End Sub
